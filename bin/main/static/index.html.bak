@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Velog Clone</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="/">valog</a>
+            <div class="d-flex align-items-center gap-2">
+                <!-- Auth buttons will be rendered here by JS -->
+                <div id="auth-buttons">
+                    <a href="/login.html" class="btn btn-dark rounded-pill">로그인</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Filter Tab -->
+        <div class="d-flex mb-4 gap-3 align-items-center">
+            <a href="#" class="text-decoration-none text-dark fw-bold fs-5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"></path>
+                </svg>
+                트렌딩
+            </a>
+            <a href="#" class="text-decoration-none text-secondary fw-bold fs-5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm.01 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z">
+                    </path>
+                </svg>
+                최신
+            </a>
+        </div>
+
+        <!-- Post Grid -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4" id="post-list">
+            <!-- Posts will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load Posts
+            try {
+                const data = await App.api.get('/api/public/posts?size=20');
+                const postList = document.getElementById('post-list');
+
+                if (data.content.length === 0) {
+                    postList.innerHTML = '<div class="text-center w-100 mt-5">포스트가 없습니다.</div>';
+                    return;
+                }
+
+                data.content.forEach(post => {
+                    const card = document.createElement('div');
+                    card.className = 'col';
+                    card.innerHTML = `
+                        <div class="post-card">
+                            <a href="/post.html?slug=${post.slug}">
+                                <img src="${post.thumbnailUrl || 'https://via.placeholder.com/320x180'}" class="post-thumbnail" alt="${post.title}">
+                            </a>
+                            <div class="post-content">
+                                <a href="/post.html?slug=${post.slug}">
+                                    <h4 class="post-title">${post.title}</h4>
+                                </a>
+                                <p class="post-desc">${post.summary || post.content.substring(0, 100)}...</p>
+                                <div class="post-meta">
+                                    <span>${App.formatDate(post.publishedAt)}</span>
+                                    <span>0개의 댓글</span>
+                                </div>
+                            </div>
+                             <div class="p-3 border-top d-flex align-items-center">
+                                <small>by <b>${post.authorName || 'User'}</b></small>
+                                <div class="ms-auto">
+                                    ♥ 0
+                                </div>
+                            </div>
+                        </div>
+                     `;
+                    postList.appendChild(card);
+                });
+
+            } catch (e) {
+                console.error(e);
+            }
+
+            // Check Login Status (Simple check needed, usually requires an endpoint 'me')
+            // For now, we assume if we have a special cookie or just check if we can access admin endpoint? 
+            // Actually, the best way is to have an endpoint /api/auth/me. 
+            // Since we don't have it, we manually toggle for now or add 'Write' button blindly and let it redirect on click.
+            // But for better UX, let's just show 'Write' and 'Logout' buttons unconditionally or check local storage if we stored something on login.
+
+            // Since we are using Session based auth, we don't have a token.
+            // We will try to fetch a protected resource to see if we are logged in - or add a /me endpoint.
+            // For simplicity, I'll add the Write button. If clicked and not logged in, `write.html` will try to post and fail? 
+            // No, `write.html` is a page. 
+
+            // Ideally we should modify AuthController to return User info.
+            // Let's assume we are guest unless proven otherwise.
+            // For this MVP, let's keep the Login button. If the user logs in, they are redirected here.
+            // We can check local storage for a simple flag "isLoggedIn" set by login page.
+
+            // Check Login Status via API
+            const user = await App.checkAuth();
+            const authButtons = document.getElementById('auth-buttons');
+
+            if (user) {
+                authButtons.innerHTML = `
+                    <a href="/write.html" class="btn btn-outline-dark me-2 rounded-pill">새 글 작성</a>
+                    <button onclick="App.logout()" class="btn btn-dark rounded-pill">로그아웃</button>
+                 `;
+            }
+        });
+    </script>
+</body>
+
+</html>

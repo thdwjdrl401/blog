@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: blog
+  profiles:
+    active: local
+
+app:
+  admin:
+    username: admin
+    password: password
+  upload:
+    path: ./uploads
